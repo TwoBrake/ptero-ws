@@ -2,6 +2,11 @@
 import { RawData, WebSocket } from "ws";
 import axios from "axios";
 
+// Interfaces
+interface SocketOptions {
+  debug: boolean;
+}
+
 // Types
 type ServerReceivableEvent =
   | "auth success"
@@ -33,23 +38,30 @@ export class pteroWebSocket {
   private panelUrl: string;
   private clientKey: string;
   private serverId: string;
+  private options: SocketOptions = { debug: false };
   // Internal variables
   private socketUrl: string;
   private socketToken: string;
   private socket: WebSocket;
   private eventListeners: { [key: string]: ((args: any) => void)[] } = {};
 
-  constructor(panelUrl: string, clientKey: string, serverId: string) {
+  constructor(
+    panelUrl: string,
+    clientKey: string,
+    serverId: string,
+    options?: SocketOptions
+  ) {
     this.panelUrl = panelUrl;
     this.clientKey = clientKey;
     this.serverId = serverId;
+    options ? (this.options = options) : "";
 
     try {
       (async () => {
         await this.authCon(true);
 
         this.regInternalEvent("auth success", () => {
-          console.log("Successfully authenticated websocket connection.");
+          this.debug("Successfully authenticated websocket connection.");
         });
 
         this.regInternalEvent("token expiring", async () => {
@@ -69,7 +81,7 @@ export class pteroWebSocket {
    * @param func - The function to run when the event is triggered.
    */
   public on(event: ServerReceivableEvent, func: (args: any) => void): void {
-    if (!this.socket)
+    if (!this.socketOpen())
       throw new Error("Websocket connection has not yet been established.");
 
     if (!this.eventListeners[event]) {
@@ -83,7 +95,24 @@ export class pteroWebSocket {
    * @param event - The event to send.
    * @param args - The arguments to send with the event.
    */
-  public send(event: ServerSendableEvent, args: any) {}
+  public send(event: ServerSendableEvent, args: any): void {
+    if (!this.socketOpen())
+      throw new Error("Websocket connection has not yet been established.");
+
+    this.socket.send(JSON.stringify({ event: event, args: args }));
+  }
+
+  /**
+   * Closes websocket connection.
+   */
+  public close(): void {
+    if (this.socketOpen()) {
+      this.socket.close();
+      this.debug("Socket has been successfully closed.");
+    } else {
+      throw new Error("Websocket connection has not yet been established.");
+    }
+  }
 
   /**
    * Handles incoming websocket messages and triggers the appropriate event listeners.
@@ -138,7 +167,7 @@ export class pteroWebSocket {
       });
 
       this.socket.on("open", () => {
-        console.log("Connected to websocket.");
+        this.debug("Connected to websocket.");
         this.socket.send(
           JSON.stringify({ event: "auth", args: [this.socketToken] }) // Send packet to websocket to authenticate with websocket token.
         );
@@ -147,6 +176,28 @@ export class pteroWebSocket {
       this.socket.send(
         JSON.stringify({ event: "auth", args: [this.socketToken] }) // Revalidate socket token.
       );
+    }
+  }
+
+  /**
+   * Determines if the socket has been initialized and is ready for use.
+   * @returns - Whether or not the socket is open.
+   */
+  private socketOpen(): boolean {
+    if (this.socket && this.socket.OPEN) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Internal debugging method.
+   * @param msg - The message to log to the console.
+   */
+  private debug(msg: string): void {
+    if (this.options.debug) {
+      console.log(msg);
     }
   }
 }

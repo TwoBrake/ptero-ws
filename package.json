@@ -1,19 +1,31 @@
 {
-  "name": "pterodactyl-panel-websocket",
+  "name": "ptero-ws",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "type": "module",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
   "scripts": {
+    "build": "npm run clean && tsc && rollup -c",
+    "clean": "rimraf ./dist/ && rimraf ./index.d.ts",
+    "prepublishOnly": "tsc && rollup -c",
     "test": "tsx src/test/class.ts"
   },
   "author": "Lucas Stranks",
   "license": "ISC",
-  "description": "",
+  "description": "A simple wrapper for handling websocket connection to a Pterodactyl Panel instance.",
   "dependencies": {
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@types/ws": "^8.5.12",
     "axios": "^1.7.7",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.24.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "typescript": "^5.6.2",
     "ws": "^8.18.0"
   }
 }
