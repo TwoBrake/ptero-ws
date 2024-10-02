@@ -1,0 +1,16 @@
+{
+  "name": "pterodactyl-panel-websocket",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lucas Stranks",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/ws": "^8.5.12",
+    "axios": "^1.7.7",
+    "ws": "^8.18.0"
+  }
+}
