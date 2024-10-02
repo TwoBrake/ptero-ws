@@ -48,13 +48,11 @@ export class pteroWebSocket {
       (async () => {
         await this.authCon(true);
 
-        this.eventListeners["auth success"] = [];
-        this.eventListeners["auth success"].push(() => {
+        this.regInternalEvent("auth success", () => {
           console.log("Successfully authenticated websocket connection.");
         });
 
-        this.eventListeners["token expiring"] = [];
-        this.eventListeners["token expiring"].push(async () => {
+        this.regInternalEvent("token expiring", async () => {
           await this.authCon(false);
         });
 
@@ -81,6 +79,13 @@ export class pteroWebSocket {
   }
 
   /**
+   * Sends an event to the server.
+   * @param event - The event to send.
+   * @param args - The arguments to send with the event.
+   */
+  public send(event: ServerSendableEvent, args: any) {}
+
+  /**
    * Handles incoming websocket messages and triggers the appropriate event listeners.
    * @param data - The incoming message data.
    */
@@ -92,6 +97,16 @@ export class pteroWebSocket {
     if (this.eventListeners[event]) {
       this.eventListeners[event].forEach((listener) => listener(args));
     }
+  }
+
+  /**
+   * Registers an internal event.
+   * @param event - The event name.
+   * @param func - The function to run when the event is triggered.
+   */
+  private regInternalEvent(event: ServerReceivableEvent, func: () => void) {
+    this.eventListeners[event] = [];
+    this.eventListeners[event].push(func);
   }
 
   /**
