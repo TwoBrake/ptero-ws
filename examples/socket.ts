@@ -1,5 +1,5 @@
 // Resources
-import { pteroWebSocket } from "..";
+import { pteroWebSocket } from "../src";
 import dotenv from "dotenv";
 
 dotenv.config(); // Make sure environment variables are loaded correctly.

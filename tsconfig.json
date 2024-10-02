@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "outDir": "dist",
+    "outDir": "./dist",
     "declaration": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "Node"
-  }
+  },
+  "exclude": ["examples", "dist"]
 }

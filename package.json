@@ -1,19 +1,31 @@
 {
-  "name": "ptero-ws",
+  "name": "@twobrake/ptero-ws",
   "version": "1.0.0",
   "main": "dist/index.js",
   "type": "module",
   "files": [
-    "index.js",
-    "index.d.ts"
+    "dist"
   ],
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "npm run clean && tsc && rollup -c",
     "clean": "rimraf ./dist/ && rimraf ./index.d.ts",
     "prepublishOnly": "tsc && rollup -c",
-    "test": "tsx src/test/class.ts"
+    "test": "tsx examples/socket.ts"
   },
-  "author": "Lucas Stranks",
+  "author": {
+    "name": "Lucas Stranks",
+    "email": "me@lucastranks.com",
+    "url": "https://lucastranks.com"
+  },
+  "homepage": "https://github.com/TwoBrake/ptero-ws",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TwoBrake/ptero-ws"
+  },
+  "bugs": {
+    "url": "https://github.com/TwoBrake/ptero-ws"
+  },
   "license": "ISC",
   "description": "A simple wrapper for handling websocket connection to a Pterodactyl Panel instance.",
   "dependencies": {
