@@ -11,7 +11,7 @@ const socket = new pteroWebSocket(
 );
 
 setTimeout(() => {
-  socket.on("message", (msg) => {
-    console.log(JSON.parse(msg.toString("utf-8")));
+  socket.on("stats", (msg) => {
+    console.log(msg);
   });
 }, 1000);

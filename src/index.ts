@@ -1,6 +1,32 @@
 // Resources
-import { WebSocket } from "ws";
+import { RawData, WebSocket } from "ws";
 import axios from "axios";
+
+// Types
+type ServerReceivableEvent =
+  | "auth success"
+  | "backup complete"
+  | "back restore completed"
+  | "console output"
+  | "daemon error"
+  | "daemon message"
+  | "install completed"
+  | "install output"
+  | "install started"
+  | "jwt error"
+  | "stats"
+  | "status"
+  | "token expired"
+  | "token expiring"
+  | "transfer logs"
+  | "transfer status";
+
+type ServerSendableEvent =
+  | "auth"
+  | "set state"
+  | "send command"
+  | "send logs"
+  | "send stats";
 
 export class pteroWebSocket {
   // Constructor parameters
@@ -11,6 +37,7 @@ export class pteroWebSocket {
   private socketUrl: string;
   private socketToken: string;
   private socket: WebSocket;
+  private eventListeners: { [key: string]: ((args: any) => void)[] } = {};
 
   constructor(panelUrl: string, clientKey: string, serverId: string) {
     this.panelUrl = panelUrl;
@@ -21,13 +48,17 @@ export class pteroWebSocket {
       (async () => {
         await this.authCon(true);
 
-        this.socket.on("auth success", () => {
-          console.log("Successfully authenticated connection to websocket.");
+        this.eventListeners["auth success"] = [];
+        this.eventListeners["auth success"].push(() => {
+          console.log("Successfully authenticated websocket connection.");
         });
 
-        this.socket.on("token expiring", async () => {
+        this.eventListeners["token expiring"] = [];
+        this.eventListeners["token expiring"].push(async () => {
           await this.authCon(false);
         });
+
+        this.socket.on("message", (data) => this.handleMessage(data));
       })();
     } catch (e) {
       throw e;
@@ -39,11 +70,28 @@ export class pteroWebSocket {
    * @param event - The event to listen to.
    * @param func - The function to run when the event is triggered.
    */
-  public on(event: string, func: (args: any) => void): void {
+  public on(event: ServerReceivableEvent, func: (args: any) => void): void {
     if (!this.socket)
       throw new Error("Websocket connection has not yet been established.");
 
-    this.socket.on(event, (args) => func(args));
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    this.eventListeners[event].push(func);
+  }
+
+  /**
+   * Handles incoming websocket messages and triggers the appropriate event listeners.
+   * @param data - The incoming message data.
+   */
+  private handleMessage(data: RawData): void {
+    const message = JSON.parse(data.toString());
+    const event = message.event;
+    const args = message.args;
+
+    if (this.eventListeners[event]) {
+      this.eventListeners[event].forEach((listener) => listener(args));
+    }
   }
 
   /**
