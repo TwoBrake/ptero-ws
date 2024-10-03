@@ -11,7 +11,7 @@
     "build": "npm run clean && tsc && rollup -c",
     "clean": "rimraf ./dist/ && rimraf ./index.d.ts",
     "prepublishOnly": "tsc && rollup -c",
-    "test": "tsx examples/socket.ts"
+    "test": "tsx examples/stats.ts"
   },
   "author": {
     "name": "Lucas Stranks",
@@ -34,6 +34,7 @@
   "devDependencies": {
     "@types/ws": "^8.5.12",
     "axios": "^1.7.7",
+    "events": "^3.3.0",
     "rimraf": "^6.0.1",
     "rollup": "^4.24.0",
     "rollup-plugin-dts": "^6.1.1",

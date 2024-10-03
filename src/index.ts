@@ -1,5 +1,6 @@
 // Resources
 import { RawData, WebSocket } from "ws";
+import EventEmitter from "events";
 import axios from "axios";
 
 // Interfaces
@@ -33,7 +34,7 @@ type ServerSendableEvent =
   | "send logs"
   | "send stats";
 
-export class pteroWebSocket {
+export class pterows extends EventEmitter {
   // Constructor parameters
   private panelUrl: string;
   private clientKey: string;
@@ -51,6 +52,7 @@ export class pteroWebSocket {
     serverId: string,
     options?: SocketOptions
   ) {
+    super();
     this.panelUrl = panelUrl;
     this.clientKey = clientKey;
     this.serverId = serverId;
@@ -80,7 +82,7 @@ export class pteroWebSocket {
    * @param event - The event to listen to.
    * @param func - The function to run when the event is triggered.
    */
-  public on(event: ServerReceivableEvent, func: (args: any) => void): void {
+  public listen(event: ServerReceivableEvent, func: (args: any) => void): void {
     if (!this.socketOpen())
       throw new Error("Websocket connection has not yet been established.");
 
@@ -108,7 +110,9 @@ export class pteroWebSocket {
   public close(): void {
     if (this.socketOpen()) {
       this.socket.close();
+      this.socket = undefined; // Once socket is closed, clear variable that stores websocket.
       this.debug("Socket has been successfully closed.");
+      this.emit("close");
     } else {
       throw new Error("Websocket connection has not yet been established.");
     }
@@ -134,7 +138,10 @@ export class pteroWebSocket {
    * @param func - The function to run when the event is triggered.
    */
   private regInternalEvent(event: ServerReceivableEvent, func: () => void) {
-    this.eventListeners[event] = [];
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+
     this.eventListeners[event].push(func);
   }
 
@@ -171,6 +178,7 @@ export class pteroWebSocket {
         this.socket.send(
           JSON.stringify({ event: "auth", args: [this.socketToken] }) // Send packet to websocket to authenticate with websocket token.
         );
+        this.emit("open");
       });
     } else {
       this.socket.send(
