@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "types": ["node"]
   },
   "exclude": ["examples", "dist"]
 }
