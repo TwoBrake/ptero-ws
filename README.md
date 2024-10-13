@@ -49,6 +49,7 @@ Ptero WS is a Node.js wrapper for handling websocket connections to a Pterodacty
    ```typescript
    {
     debug: false, // Whether or not messages should be displayed in the console when the socket is connected and closed.
+    browser: false, // Whether or not the socket should be treated as a browser socket.
    }
    ```
 

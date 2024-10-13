@@ -1,11 +1,12 @@
 // Resources
-import { RawData, WebSocket } from "ws";
+import { WebSocket as NodeWebSocket, RawData } from "ws";
 import EventEmitter from "events";
 import axios from "axios";
 
 // Interfaces
 interface SocketOptions {
   debug: boolean;
+  browser?: boolean;
 }
 
 // Types
@@ -39,11 +40,11 @@ export class pterows extends EventEmitter {
   private panelUrl: string;
   private clientKey: string;
   private serverId: string;
-  private options: SocketOptions = { debug: false };
+  private options: SocketOptions = { debug: false, browser: false };
   // Internal variables
   private socketUrl: string;
   private socketToken: string;
-  private socket: WebSocket;
+  private socket: WebSocket | NodeWebSocket;
   private eventListeners: { [key: string]: ((args: any) => void)[] } = {};
 
   constructor(
@@ -70,7 +71,18 @@ export class pterows extends EventEmitter {
           await this.authCon(false);
         });
 
-        this.socket.on("message", (data) => this.handleMessage(data));
+        if (this.options.browser) {
+          const socket: WebSocket = this.socket as WebSocket;
+
+          socket.onmessage = (event) => this.handleMessage(event.data);
+          socket.onopen = () => this.emit("open");
+          socket.onclose = () => this.emit("close");
+          socket.onerror = (error) => this.emit("error", error);
+        } else {
+          const socket: NodeWebSocket = this.socket as NodeWebSocket;
+
+          socket.on("message", (data) => this.handleMessage(data));
+        }
       })();
     } catch (e) {
       throw e;
@@ -122,8 +134,8 @@ export class pterows extends EventEmitter {
    * Handles incoming websocket messages and triggers the appropriate event listeners.
    * @param data - The incoming message data.
    */
-  private handleMessage(data: RawData): void {
-    const message = JSON.parse(data.toString());
+  private handleMessage(data: string | RawData): void {
+    const message = JSON.parse(String(data));
     const event = message.event;
     const args = message.args;
 
@@ -164,22 +176,43 @@ export class pterows extends EventEmitter {
     this.socketToken = socketReq.data.data.token;
 
     if (initial) {
-      this.socketUrl = socketReq.data.data.socket;
+      if (this.options.browser) {
+        // * NATIVE WEBSOCKET METHOD
+        try {
+          this.socketUrl = `${socketReq.data.data.socket}?token=${this.socketToken}`;
+          this.socket = new WebSocket(this.socketUrl);
 
-      this.socket = new WebSocket(this.socketUrl, {
-        headers: {
-          authorization: this.socketToken,
-        },
-        origin: this.panelUrl,
-      });
+          this.socket.onopen = () => {
+            this.debug("Connected to websocket.");
+            this.socket.send(
+              JSON.stringify({ event: "auth", args: [this.socketToken] }) // Send packet to websocket to authenticate with websocket token.
+            );
+            this.emit("open");
+          };
+        } catch (e) {
+          this.debug(e);
+          throw new Error(
+            "Browser environment does not exist. Try using a browser environment or turn of browser in options."
+          );
+        }
+      } else {
+        // * NODEJS WEBSOCKET METHOD
+        this.socketUrl = socketReq.data.data.socket;
+        this.socket = new NodeWebSocket(this.socketUrl, {
+          headers: {
+            authorization: this.socketToken,
+          },
+          origin: this.panelUrl,
+        });
 
-      this.socket.on("open", () => {
-        this.debug("Connected to websocket.");
-        this.socket.send(
-          JSON.stringify({ event: "auth", args: [this.socketToken] }) // Send packet to websocket to authenticate with websocket token.
-        );
-        this.emit("open");
-      });
+        this.socket.on("open", () => {
+          this.debug("Connected to websocket.");
+          this.socket.send(
+            JSON.stringify({ event: "auth", args: [this.socketToken] }) // Send packet to websocket to authenticate with websocket token.
+          );
+          this.emit("open");
+        });
+      }
     } else {
       this.socket.send(
         JSON.stringify({ event: "auth", args: [this.socketToken] }) // Revalidate socket token.
